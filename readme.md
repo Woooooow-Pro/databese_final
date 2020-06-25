@@ -4,29 +4,26 @@
 
 ### Levenshtein Distance
 
-*据说这个是某个🇷🇺数学家整出的算法（就是 Levenshtein 我不知道怎么读的词的数学家），惊呼毛子牛皮。*
+Levenshtein distance 算法（中文名：莱文斯坦距离算法或编辑距离算法）由苏联数学家弗拉基米尔·莱文斯坦于1965年提出，它以对一个字符串每步插入、删除或替换一个字符，是之变成另一个字符串所需要的最小步骤数度量这两个字符串的“距离”，也因此得名“编辑距离算法”。
 
 1. 算法思路
-    1. 概念介绍：
-        - 这个算法就是在计算两个字串之间，由一个转换成另一个所需的最少编辑操作次数
-        - 然后这个大概就是论文查重网站的基础算法吧（我猜的，么得考证过）
-    2. 算法思路
+    - 步骤解释
+        Levenshtein distance 算法中，每次对字符串可以进行插入、删除或替换一个字符，通过一些例子可以更好理解。
+        - 将 sun 转化为 son 只需要将 u 替换为 o，因此 sun 和 son 之间的Levenshtein 距离为 1。
+        - 将 sun 转化为 sunday 需要插入 d、a、y 三个字符，因此 sun 和 sunday 之间的Levenshtein 距离为 3。
+        - 同理，将 sunday 转化为 sun 需要删除 d、a、y 三个字符，因此 sunday 和 sun 之间的Levenshtein 距离也为 3。
+    - 核心逻辑
         ${\displaystyle \qquad \operatorname {lev} _{a,b}(i,j)={\begin{cases}\max(i,j)&{\text{ if }}\min(i,j)=0,\\\min {\begin{cases}\operatorname {lev}_{a,b}(i-1,j)+1\\\operatorname {lev} _{a,b}(i,j-1)+1\\\operatorname {lev}_{a,b}(i-1,j-1)+1_{(a_{i}\neq b_{j})}\end{cases}}&{\text{ otherwise.}}\end{cases}}}$
-    3. 这个算法的基础是像下图一样更改字符串的方法（djq快点想怎么说）
-        |replace|innsert|
-        |-|-|
-        |**delete**|**you are here**|
-    4. 大概过程：
         - 初始化一个`table`矩阵`(M,N)`，`M`和`N`分别是两个输入字符串的长度
         - 矩阵可以从左上角到右下角进行填充，每个水平或垂直跳转分别对应于一个插入或一个删除通过定义每个操作的成本为1，如果两个字符串不匹配，则对角跳转的代价为1，否则为0，简单来说就是：
           - 如果`[i][j]`位置的两个字符串相等，则从`[i][j]`位置左加1，上加1，左上加0，然后从这三个数中取出最小的值填充到`[i][j]`
           - 如果`[i][j]`位置的两个字符串不相等，则从`[i][j]`位置左、左上、上三个位置的值中取最小值，这个最小值加1（或者说这三个值都加1然后取最小值），然后填充到`[i][j]`
         - 按照上面规则`Table`矩阵`(M,N)`填充完毕后，最终矩阵右下角的数字就是两个字符串的`Levenshtein Distance`值 
-    5. 好我编不下去了自行参照 [YouTube](https://www.youtube.com/watch?v=MiqoA-yF-0M) 老哥教学视屏  
+    - 更多内容可以参阅这个[视频](https://www.youtube.com/watch?v=MiqoA-yF-0M)
 
 2. 过程中的种种问题
-   * `text`转换问题
-        研究了好久这个 `text` 是个啥
+    * `text`转换问题
+        我们首先来研究一下这个 `text` 的实现，我们在源码中找到了这样的代码
 
         ```c
         typedef struct varlena text;
@@ -36,7 +33,7 @@
         };
         ```
 
-        看了源码后，我寻思`vl_dat`应该就是string了， 于是不假思索的写了如下代码转换
+        在研究源码后，可以确定`vl_dat`就是string了， 于是尝试使用如下方法
 
         ```c
         text * str_01 = PG_GETARG_DATUM(0);
@@ -48,9 +45,9 @@
         int len_2 = strlen(str2);
         ```
 
-        然后运行后发现如图情况![年轻人的错误1](./part1_1_text.png)
+        运行后发现如图情况![年轻人的错误1](./part1_1_text.png)
 
-        然后发现事情没有那么简单，他竟然是字符串后面加东西的？这时我果断放弃了这个危险的想法，转用 `text_to_cstring()`（这个函数是在看text结构的时候看到的，于是我想我为啥一定要自己写一个新的呢？）
+        我们发现在字符串后面加上了不需要的内容，因此需要另寻出路。在研究 text 结构的时候我们发现了 `text_to_cstring()` 函数，于是转而采用此函数实现将`text`的转化，代码如下
 
         ```c
         text * str_01 = PG_GETARG_DATUM(0);
@@ -114,15 +111,14 @@
             PG_RETURN_INT32(result);
         }
         ```
-
-    - `int min(int a, int b, int c)`:
-        用来计算三者中最小值；
-    - `char TOLOWER(char c)`:
-        用来讲大写字符转换成小写，即实现了大小写不敏感对需求。
-        之后的 Jaccard Index 也要用
-    - `Datum levenshtein_distance(PG_FUNCTION_ARGS)`：
-        讲道理不知道 `Datum` 是个啥，但是不影响我写这个函数，然后这个函数已经在上面介绍过啦，这里就划划水了
-4. 结果：
+    - 功能说明
+        - `int min(int a, int b, int c)`
+            用来计算三者中最小值
+        - `char TOLOWER(char c)`
+            用来讲大写字符转换成小写，即实现了大小写不敏感对需求。在之后的 Jaccard Index 中我们也会用到这个函数
+        - `Datum levenshtein_distance(PG_FUNCTION_ARGS)`
+            Levenshtein Distance 算法核心部分
+4. 结果展示
     - select levenshtein_distance('sunday', 'sunday');
         ![0](WechatIMG3.png)
     - select levenshtein_distance('sunday', 'Monday'); levenshtein_distance
