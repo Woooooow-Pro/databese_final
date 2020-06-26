@@ -116,7 +116,7 @@ Levenshtein distance 算法（中文名：莱文斯坦距离算法或编辑距�
         - `int min(int a, int b, int c)`
             用来计算三者中最小值
         - `char TOLOWER(char c)`
-            用来讲大写字符转换成小写，即实现了大小写不敏感对需求。在之后的 Jaccard Index 中我们也会用到这个函数
+            用来将大写字符转换成小写，即实现了大小写不敏感对需求。在之后的 Jaccard Index 中我们也会用到这个函数
         - `Datum levenshtein_distance(PG_FUNCTION_ARGS)`
             Levenshtein Distance 算法核心部分
 4. 结果展示
@@ -143,38 +143,53 @@ Levenshtein distance 算法（中文名：莱文斯坦距离算法或编辑距�
 
 ### Jaccard Index
 
-Jaccard相似指数用来度量两个集合之间的相似性，它被定义为两个集合交集的元素个数除以并集的元素个数。
-The Jaccard index, also known as Intersection over Union and the Jaccard similarity coefficient (originally given the French name coefficient de communauté by Paul Jaccard), is a statistic used for gauging the similarity and diversity of sample sets. The Jaccard coefficient measures similarity between finite sample sets, and is defined as the size of the intersection divided by the size of the union of the sample sets:
-$J(A,B) = {{|A \cap B|}\over{|A \cup B|}} = {{|A \cap B|}\over{|A| + |B| - |A \cap B|}}$
-(If $A$ and $B$ are both empty, define $J(A,B) = 1$.)
+- Jaccard相似指数用来度量两个集合之间的相似性，它被定义为两个集合交集的元素个数除以并集的元素个数:
+$J(A,B) = {{|A \cap B|}\over{|A \cup B|}} = {{|A \cap B|}\over{|A| + |B| - |A \cap B|}}$ (若 $A$ 和 $B$ 均为空集，则 $J(A,B) = 1$)
 $0\le J(A,B)\le 1$
+- 在这个算法中，我们用两个个字符串的二元划分集来计算 Jaccard 相似指数。所谓二元划分集，就是将一个字符串首尾都加上`$`，然后从头部开始每两个字符组成一个二元组。例如，`apple`对应的二元划分集为{`$a`, `ap`, `pp`, `pl`, `le`, `e$`}，`apply`对应的二元划分集为{`$a`, `ap`, `pp`, `pl`, `ly`, `y$`}，两个二元划分集的交集为{`$a`, `ap`, `pp`, `pl`}，并集为{`$a`, `ap`, `pp`, `pl`, `le`, `e$`, `ly`, `y$`}。因此`apple`和`apply`的 Jaccard 相似指数为 0.5
 
-3. 代码解释
+1. 代码解释
 
     ```c
+    /*我们在 Jaccard Index 中也用到了 checkequal 函数，用于实现大小写不敏感*/
+    /*getbiagram 函数用于求出字符串的二元划分集*/
+    /*第一个参数是字符串本身*/
+    /*第二个参数是一个 tag 数组，-1 表示字符串头部，-2 表示字符串尾部，-3 表示没有标记（初始情况），自然数表示二元划分的第一个字符在字符串中的位置*/
+    /*返回值是该字符串二元划分集元素个数*/
     int getbiagram(char *str, int *tag){
         int i, j, len = strlen(str), result = 1;
+        /*标记头部位置，并将 tag 数组中所有的值初始化为 -3*/
         tag[0] = -1;
         for (i = 1; i < 256; i++)
             tag[i] = -3;
         for (i = 0; i < len - 1; i++){
             for (j = 1; j < result; j++)
+                /*从头部之后开始遍历，检查是否与之前已经发现的二元组重复*/
                 if ((TOLOWER(str[i]) == TOLOWER(str[tag[j]])) && (TOLOWER(str[i + 1]) == TOLOWER(str[tag[j] + 1])))
                     break;
-            if (j == result) 
+            /*若没有重复，则标记当前位置*/
+            if (j == result)
                 tag[result++] = i;
         }
+        /*全部遍历完成后标记尾部位置*/
         tag[result++] = -2;
         return result;
     }
+    ```
 
+    ```c
+    /*inter 函数用于求出两个集合的交集元素个数*/
+    /*第一第二个参数是两个字符串，第三第四个参数是两个字符串分别对应的二元划分集*/
+    /*返回值是两个二元划分集交集的元素个数*/
     int inter(char *str1, char *str2, int *tag1, int *tag2){
         int i, j, cnt = 0;
         for (i = 0; i < 256 && tag1[i] != -3; i++){
+            /*对首尾两处单独处理，因为只要比较一个字符即可*/
             if (tag1[i] == -1)
                 cnt += (TOLOWER(str1[0]) == TOLOWER(str2[0]) ? 1 : 0);
             else if (tag1[i] == -2)
                 cnt += (TOLOWER(str1[strlen(str1) - 1]) == TOLOWER(str2[strlen(str2) - 1]) ? 1 : 0);
+            /*中间的二元组需要遍历检查才能判定是否属于交集*/
             else{
                 for (j = 1; j < 256 && tag2[j] != -2; j++){
                     if ((TOLOWER(str1[tag1[i]]) == TOLOWER(str2[tag2[j]])) && (TOLOWER(str1[tag1[i] + 1]) == TOLOWER(str2[tag2[j] + 1])))
@@ -186,7 +201,10 @@ $0\le J(A,B)\le 1$
         }
         return cnt;
     }
+    ```
 
+    ```c
+    /*Jaccard Index 算法，主要功能已经通过上面两个函数实现*/
     Datum jaccard_index(PG_FUNCTION_ARGS)
     {
         text *str_01 = PG_GETARG_DATUM(0);
@@ -203,7 +221,7 @@ $0\le J(A,B)\le 1$
     }
     ```
 
-1. 结果展示
+2. 结果展示
     - `select count(*) from restaurantphone rp, addressphone ap where jaccard_index(rp.phone, ap.phone) > .6;`
         ![12](WechatIMG12.png)
     - `select count(*) from restaurantaddress ra, restaurantphone rp where jaccard_index(ra.name, rp.name) > .65;`
