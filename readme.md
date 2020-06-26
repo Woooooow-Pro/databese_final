@@ -111,10 +111,7 @@ Levenshtein distance 算法（中文名：莱文斯坦距离算法或编辑距�
             PG_RETURN_INT32(result);
         }
         ```
-<<<<<<< HEAD
 
-=======
->>>>>>> 7b99f727e2532fdefeedf82d30e0f5db77ef45b5
     - 功能说明
         - `int min(int a, int b, int c)`
             用来计算三者中最小值
@@ -123,11 +120,7 @@ Levenshtein distance 算法（中文名：莱文斯坦距离算法或编辑距�
         - `Datum levenshtein_distance(PG_FUNCTION_ARGS)`
             Levenshtein Distance 算法核心部分
 4. 结果展示
-<<<<<<< HEAD
     - `select levenshtein_distance('sunday', 'sunday');`
-=======
-    - select levenshtein_distance('sunday', 'sunday');
->>>>>>> 7b99f727e2532fdefeedf82d30e0f5db77ef45b5
         ![0](WechatIMG3.png)
     - `select levenshtein_distance('sunday', 'Monday'); levenshtein_distance`
         ![2](WechatIMG4.png)
