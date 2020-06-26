@@ -214,6 +214,7 @@ $0\le J(A,B)\le 1$
       SELECT rp.phone, ap.phone, rp.name, ap.address
       FROM restaurantphone rp, addressphone ap
       WHERE jaccard_index(rp.phone, ap.phone) > .6 AND
-          (ap.address LIKE '% Berkeley%' OR ap.address LIKE '% Oakland %') ORDER BY 1, 2, 3, 4;
+          (ap.address LIKE '%Berkeley%' OR ap.address LIKE '%Oakland%') ORDER BY 1, 2, 3, 4;
       ```
-      ![18](WechatIMG18.png)
+      ![18](WechatIMG21.png)
+      *这里坑死我了，竟然要去空格，真的吐了*
