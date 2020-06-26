@@ -140,3 +140,80 @@ Levenshtein distance 算法（中文名：莱文斯坦距离算法或编辑距�
         ```
         ![sql](WechatIMG16.png)
         ![sql2](WechatIMG15.png)
+
+### Jaccard Index
+
+Jaccard相似指数用来度量两个集合之间的相似性，它被定义为两个集合交集的元素个数除以并集的元素个数。
+The Jaccard index, also known as Intersection over Union and the Jaccard similarity coefficient (originally given the French name coefficient de communauté by Paul Jaccard), is a statistic used for gauging the similarity and diversity of sample sets. The Jaccard coefficient measures similarity between finite sample sets, and is defined as the size of the intersection divided by the size of the union of the sample sets:
+$J(A,B) = {{|A \cap B|}\over{|A \cup B|}} = {{|A \cap B|}\over{|A| + |B| - |A \cap B|}}$
+(If $A$ and $B$ are both empty, define $J(A,B) = 1$.)
+$0\le J(A,B)\le 1$
+
+3. 代码解释
+
+    ```c
+    int getbiagram(char *str, int *tag){
+        int i, j, len = strlen(str), result = 1;
+        tag[0] = -1;
+        for (i = 1; i < 256; i++)
+            tag[i] = -3;
+        for (i = 0; i < len - 1; i++){
+            for (j = 1; j < result; j++)
+                if ((TOLOWER(str[i]) == TOLOWER(str[tag[j]])) && (TOLOWER(str[i + 1]) == TOLOWER(str[tag[j] + 1])))
+                    break;
+            if (j == result) 
+                tag[result++] = i;
+        }
+        tag[result++] = -2;
+        return result;
+    }
+
+    int inter(char *str1, char *str2, int *tag1, int *tag2){
+        int i, j, cnt = 0;
+        for (i = 0; i < 256 && tag1[i] != -3; i++){
+            if (tag1[i] == -1)
+                cnt += (TOLOWER(str1[0]) == TOLOWER(str2[0]) ? 1 : 0);
+            else if (tag1[i] == -2)
+                cnt += (TOLOWER(str1[strlen(str1) - 1]) == TOLOWER(str2[strlen(str2) - 1]) ? 1 : 0);
+            else{
+                for (j = 1; j < 256 && tag2[j] != -2; j++){
+                    if ((TOLOWER(str1[tag1[i]]) == TOLOWER(str2[tag2[j]])) && (TOLOWER(str1[tag1[i] + 1]) == TOLOWER(str2[tag2[j] + 1])))
+                        break;
+                }
+                if (tag2[j] != -2 && tag2[j] != -3)
+                    cnt++;
+            }
+        }
+        return cnt;
+    }
+
+    Datum jaccard_index(PG_FUNCTION_ARGS)
+    {
+        text *str_01 = PG_GETARG_DATUM(0);
+        text *txt_02 = PG_GETARG_DATUM(1);
+        char* str1 = text_to_cstring(str_01);
+        char* str2 = text_to_cstring(txt_02);
+        int tag1[256], cnt_1;
+        int tag2[256], cnt_2;
+        cnt_1 = getbiagram(str1, tag1);
+        cnt_2 = getbiagram(str2, tag2);
+        int insec = inter(str1, str2, tag1, tag2);
+        float result = (float)insec / (cnt_1 + cnt_2 - insec);
+        PG_RETURN_FLOAT4(result);
+    }
+    ```
+
+1. 结果展示
+    - `select count(*) from restaurantphone rp, addressphone ap where jaccard_index(rp.phone, ap.phone) > .6;`
+        ![12](WechatIMG12.png)
+    - `select count(*) from restaurantaddress ra, restaurantphone rp where jaccard_index(ra.name, rp.name) > .65;`
+        ![13](WechatIMG13.png)
+    - `select count(*) from restaurantaddress ra, addressphone ap where jaccard_index(ra.address, ap.address) > .8;`
+        ![14](WechatIMG14.png)
+    - ```sql
+      SELECT rp.phone, ap.phone, rp.name, ap.address
+      FROM restaurantphone rp, addressphone ap
+      WHERE jaccard_index(rp.phone, ap.phone) > .6 AND
+          (ap.address LIKE '% Berkeley%' OR ap.address LIKE '% Oakland %') ORDER BY 1, 2, 3, 4;
+      ```
+      ![18](WechatIMG18.png)
