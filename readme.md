@@ -1,6 +1,8 @@
 # Database Project
 
-## POSTGRESQL 工作流程[^1]
+陈冠多 18307130094[^1]  戴佳麒 18307130006[^2]
+
+## POSTGRESQL 工作流程[^3]
 
 ### PostgreSQL的结构
 
@@ -352,25 +354,25 @@ Levenshtein distance 算法（中文名：莱文斯坦距离算法或编辑距�
             Levenshtein Distance 算法核心部分
 4. 结果展示
     - `select levenshtein_distance('sunday', 'sunday');`
-        ![0](WechatIMG3.png)
+        ![0](image/WechatIMG3.png)
     - `select levenshtein_distance('sunday', 'Monday'); levenshtein_distance`
-        ![2](WechatIMG4.png)
+        ![2](image/WechatIMG4.png)
     - `select levenshtein_distance('sunday', 'saturday');`
-        ![3](WechatIMG5.png)
+        ![3](image/WechatIMG5.png)
     - `select count(*) from restaurantphone rp, addressphone ap where levenshtein_distance(rp.phone, ap.phone) < 4;`
-        ![4](WechatIMG9.png)
+        ![4](image/WechatIMG9.png)
     - `select count(*) from restaurantaddress ra, restaurantphone rp where levenshtein_distance(ra. name, rp. name) < 3;`
-        ![<3](WechatIMG10.png)
+        ![<3](image/WechatIMG10.png)
     - `select count(*) from restaurantaddress ra, addressphone ap where levenshtein_distance(ra.address, ap.address) < 4;`
-        ![<4](WechatIMG11.png)
+        ![<4](image/WechatIMG11.png)
     - ```sql
       SELECT ra.address, ap.address, ra.name, ap.phone
       FROM restaurantaddress ra, addressphone ap
       WHERE levenshtein_distance(ra.address, ap.address) < 4 AND
           (ap.address LIKE '%Berkeley%' OR ap.address LIKE '%Oakland%') ORDER BY 1, 2, 3, 4;
       ```
-        ![sql](WechatIMG16.png)
-        ![sql2](WechatIMG15.png)
+        ![sql](image/WechatIMG16.png)
+        ![sql2](image/WechatIMG15.png)
 
 ### Jaccard Index
 
@@ -532,23 +534,24 @@ Levenshtein distance 算法（中文名：莱文斯坦距离算法或编辑距�
 
 5. 结果展示
     - `select count(*) from restaurantphone rp, addressphone ap where jaccard_index(rp.phone, ap.phone) > .6;`
-        ![12](WechatIMG12.png)
+        ![12](image/WechatIMG12.png)
     - `select count(*) from restaurantaddress ra, restaurantphone rp where jaccard_index(ra.name, rp.name) > .65;`
-        ![13](WechatIMG13.png)
+        ![13](image/WechatIMG13.png)
     - `select count(*) from restaurantaddress ra, addressphone ap where jaccard_index(ra.address, ap.address) > .8;`
-        ![14](WechatIMG14.png)
+        ![14](image/WechatIMG14.png)
     - ```sql
       SELECT rp.phone, ap.phone, rp.name, ap.address
       FROM restaurantphone rp, addressphone ap
       WHERE jaccard_index(rp.phone, ap.phone) > .6 AND
           (ap.address LIKE '%Berkeley%' OR ap.address LIKE '%Oakland%') ORDER BY 1, 2, 3, 4;
       ```
-      ![18](WechatIMG21.png)
+      ![18](image/WechatIMG21.png)
       *这里坑死我了，竟然要去空格，真的吐了*
 
 ## PART2
 
 由于时间有限以及没有完全理解代码所以就没有做
 
-
-[^1]: 搬运自 [Pgsrcstructure](https://wiki.postgresql.org/wiki/Pgsrcstructure) 当然在理解的基础上...
+[^1]:负责算法部分，报告排版整理，数据库具体操作，以及截图（parallels用户）
+[^2]:负责算法优化，代码注释，资料搜集整理，数据库构造理解，以及视屏录制和讲解
+[^3]: 搬运自 [Pgsrcstructure](https://wiki.postgresql.org/wiki/Pgsrcstructure) 当然在理解的基础上...
